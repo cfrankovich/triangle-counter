@@ -8,11 +8,12 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
 
+#include "text.h"
+
 #define FPS 60 
 #define WIDTH 500
 #define HEIGHT 500
 #define MAXPOINTS 26 
-#define LIBERATION_MONO_REGULAR "/usr/share/fonts/liberation-fonts/LiberationMono-Regular.ttf"
 
 typedef struct {
 	char letter;
@@ -71,14 +72,10 @@ int main(int argc, char **argv)
 	window = SDL_CreateWindow("Triangle Counter", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, WIDTH, HEIGHT, 0);
 	renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
 
-	/*
 	TTF_Init();
 	TTF_Font *font = TTF_OpenFont(LIBERATION_MONO_REGULAR, 12);
 
 	SDL_Color white = { 255, 255, 255 };
-	SDL_Color red = { 226, 44, 44 };
-	SDL_Color blue = { 44, 44, 226 };
-	*/
 
 	int totalpoints, totalsolpoints;
 	totalpoints = 0;
@@ -86,6 +83,9 @@ int main(int argc, char **argv)
 
 	Point *points[MAXPOINTS];
 	Point *solpoints[MAXPOINTS];
+
+	char pointcount[32] = "Points: 0\0";
+	Text_t pointstext = init_text(pointcount, font, 0, 0, white, renderer);
 
 	int32_t elapsed;
 	int frametime;
@@ -139,8 +139,9 @@ int main(int argc, char **argv)
 				}
 
 				points[totalpoints] = newpoint;
-				printf("[DEBUG] New Point at (%d, %d)\n", newpoint->x, newpoint->y);
 				totalpoints++;
+				sprintf(pointcount, "Points: %d", totalpoints);
+				pointstext = init_text(pointcount, font, 0, 0, white, renderer);
 
 				if (totalpoints >= 2)
 				{
@@ -183,14 +184,11 @@ int main(int argc, char **argv)
 						solpoint->x = x;
 						solpoint->y = y;
 						solpoints[totalsolpoints] = solpoint;
-						printf("[DEBUG] New Sol Point at (%d, %d)\n", solpoint->x, solpoint->y);
 						totalsolpoints++;
 
 					}
 
 				}
-
-				printf("\n");
 
 				break;
 
@@ -198,8 +196,13 @@ int main(int argc, char **argv)
 				switch(event.key.keysym.sym)
 				{
 					case SDLK_c:
-						for (int i = 0; i < totalpoints; ++i) free(points[i]);
+						int i;
+						for (i = 0; i < totalpoints; ++i) free(points[i]);
+						for (i = 0; i < totalsolpoints; ++i) free(solpoints[i]); 
 						totalpoints = 0;
+						totalsolpoints = 0;
+						sprintf(pointcount, "Points: %d", totalpoints);
+						pointstext = init_text(pointcount, font, 0, 0, white, renderer);
 						break;
 
 					case SDLK_q:
@@ -265,6 +268,8 @@ int main(int argc, char **argv)
 		{
 			SDL_RenderDrawLine(renderer, points[iter-1]->x, points[iter-1]->y, points[iter]->x, points[iter]->y);
 		}
+
+		SDL_RenderCopy(renderer, pointstext.texture, NULL, &pointstext.rect);
 		
 
 		SDL_RenderPresent(renderer);

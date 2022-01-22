@@ -10,10 +10,13 @@ override LIBS += $(SDL_LIBS)
 all: create 
 	@echo "Done!"
 
-create: triagcntr.o 
+create: triagcntr.o text.o 
 	$(CC) $(LDFLAGS) -o $(NAME) $^ $(CFLAGS) $(LIBS)
 
 triagcntr.o: triagcntr.c 
+	$(CC) $(LDFLAGS) -o $@ -c $^ $(CFLAGS) $(LIBS)
+
+text.o: text.c
 	$(CC) $(LDFLAGS) -o $@ -c $^ $(CFLAGS) $(LIBS)
 
 clean:

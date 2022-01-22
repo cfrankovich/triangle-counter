@@ -175,8 +175,9 @@ int main(int argc, char **argv)
 						x = ((-yi2) - (-yi1)) / ((-a1) - (-a2)); 
 						y = -((yi1 * a2) - (yi2 * a1)) / ((-a1) - (-a2));
 
-						if (x > WIDTH || x < 0) continue;
-						if (y > HEIGHT || y < 0) continue;
+						/* Checks to see if the solution is on the line */
+						if (x < ((x1 < x2) ? x1 : x2) || x > ((x1 > x2) ? x1 : x2)) continue;
+						else if (-y > ((y1 > y2) ? y1 : y2) || -y < ((y1 < y2) ? y1 : y2)) continue;
 
 						Point *solpoint;
 						solpoint = malloc(sizeof(Point));
@@ -247,7 +248,7 @@ int main(int argc, char **argv)
 
 			if ( (pow(mposx - solpoints[iter]->x, 2) + pow(mposy - solpoints[iter]->y, 2)) <= 49 ) 
 			{
-				SDL_SetRenderDrawColor(renderer, 0xAA, 0xAA, 0xAA, 0xFF);
+				SDL_SetRenderDrawColor(renderer, 0xAA, 0xFF, 0xAA, 0xFF);
 				for (int i = 0; i < 7; ++i)
 					DrawCircle(renderer, solpoints[iter]->x, solpoints[iter]->y, i);
 				SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, 0xFF);

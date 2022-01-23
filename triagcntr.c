@@ -59,6 +59,59 @@ void DrawCircle(SDL_Renderer * renderer, int32_t centreX, int32_t centreY, int32
 
 }
 
+void calculate_solutions(Point **points, int *totalpoints, Point **solpoints, int *totalsolpoints)
+{
+	int i;
+	int x1, x2, y1, y2;
+	float a1, yi1;
+
+	x1 = points[*totalpoints-2]->x;
+	y1 = -points[*totalpoints-2]->y;
+	x2 = points[*totalpoints-1]->x;
+	y2 = -points[*totalpoints-1]->y;
+
+	a1 = (float)(y2 - y1)/(x2 - x1);
+	yi1 = -((a1 * x1) - y1);
+
+	for (i = 0; i < *totalpoints-2; ++i)
+	{
+		int x3, x4, y3, y4;
+		float a2, yi2;
+		x3 = points[i]->x;
+		y3 = -points[i]->y;
+		x4 = points[i+1]->x;
+		y4 = -points[i+1]->y;
+		
+		if (x4 == x1 && y4 == y1) continue;
+
+		a2 = (float)(y4 - y3)/(x4 - x3);
+		yi2 = -((a2 * x3) - y3);
+
+		int x, y;
+		x = ((-yi2) - (-yi1)) / ((-a1) - (-a2)); 
+		y = -((yi1 * a2) - (yi2 * a1)) / ((-a1) - (-a2));
+
+		/* Super ugly checks to see if its "valid" */
+		if (x < ((x1 < x2) ? x1 : x2) || x > ((x1 > x2) ? x1 : x2)) continue;
+		else if (-y > ((y1 > y2) ? y1 : y2) || -y < ((y1 < y2) ? y1 : y2)) continue;
+		else if (x < ((x3 < x4) ? x3 : x4) || x > ((x3 > x4) ? x3 : x4)) continue;
+		else if (-y > ((y3 > y4) ? y3 : y4) || -y < ((y3 < y4) ? y3 : y4)) continue;
+		else if (x == x1 && -y == y1) continue;
+		else if (x == x2 && -y == y2) continue;
+		else if (x == x3 && -y == y3) continue;
+		else if (x == x4 && -y == y4) continue;
+
+		Point *solpoint;
+		solpoint = malloc(sizeof(Point));
+		solpoint->letter = '!'; 
+		solpoint->x = x;
+		solpoint->y = y;
+		solpoints[*totalsolpoints] = solpoint;
+		*(totalsolpoints) += 1;
+
+	}
+}
+
 int main(int argc, char **argv)
 {
 	bool running, simulate; 
@@ -121,11 +174,7 @@ int main(int argc, char **argv)
 						newpoint->y = points[iter]->y;	
 						in = true;
 					}
-				}
-				for (iter = 0; iter < totalsolpoints; ++iter)
-				{
-					if (in) break;
-					else if ( (pow(mposx - solpoints[iter]->x, 2) + pow(mposy - solpoints[iter]->y, 2)) <= 49 ) 
+					else if ( (iter < totalsolpoints) && ( (pow(mposx - solpoints[iter]->x, 2) + pow(mposy - solpoints[iter]->y, 2)) <= 49) ) 
 					{
 						newpoint->x = solpoints[iter]->x;	
 						newpoint->y = solpoints[iter]->y;	
@@ -145,50 +194,7 @@ int main(int argc, char **argv)
 
 				if (totalpoints >= 2)
 				{
-					int i;
-					int x1, x2, y1, y2;
-					float a1, yi1;
-
-					x1 = points[totalpoints-2]->x;
-					y1 = -points[totalpoints-2]->y;
-					x2 = points[totalpoints-1]->x;
-					y2 = -points[totalpoints-1]->y;
-
-					a1 = (float)(y2 - y1)/(x2 - x1);
-					yi1 = -((a1 * x1) - y1);
-
-					for (i = 0; i < totalpoints-2; ++i)
-					{
-						int x3, x4, y3, y4;
-						float a2, yi2;
-						x3 = points[i]->x;
-						y3 = -points[i]->y;
-						x4 = points[i+1]->x;
-						y4 = -points[i+1]->y;
-						
-						if (x4 == x1 && y4 == y1) continue;
-
-						a2 = (float)(y4 - y3)/(x4 - x3);
-						yi2 = -((a2 * x3) - y3);
-
-						int x, y;
-						x = ((-yi2) - (-yi1)) / ((-a1) - (-a2)); 
-						y = -((yi1 * a2) - (yi2 * a1)) / ((-a1) - (-a2));
-
-						/* Checks to see if the solution is on the line */
-						if (x < ((x1 < x2) ? x1 : x2) || x > ((x1 > x2) ? x1 : x2)) continue;
-						else if (-y > ((y1 > y2) ? y1 : y2) || -y < ((y1 < y2) ? y1 : y2)) continue;
-
-						Point *solpoint;
-						solpoint = malloc(sizeof(Point));
-						solpoint->letter = '!'; 
-						solpoint->x = x;
-						solpoint->y = y;
-						solpoints[totalsolpoints] = solpoint;
-						totalsolpoints++;
-
-					}
-
+					calculate_solutions(points, &totalpoints, solpoints, &totalsolpoints);
 				}
 
 				break;
@@ -196,6 +202,10 @@ int main(int argc, char **argv)
 			case SDL_KEYDOWN:
 				switch(event.key.keysym.sym)
 				{
+					case SDLK_RETURN:
+						printf("calculating...\n");
+						break;
+
 					case SDLK_c:
 						int i;
 						for (i = 0; i < totalpoints; ++i) free(points[i]);
@@ -238,20 +248,18 @@ int main(int argc, char **argv)
 				SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, 0xFF);
 			}
 
-		}
-		/* This is stupid but it works */
-		for (iter = 0; iter < totalsolpoints; ++iter)
-		{
-			SDL_RenderDrawPoint(renderer, solpoints[iter]->x, solpoints[iter]->y);
-			if ( (pow(mposx - solpoints[iter]->x, 2) + pow(mposy - solpoints[iter]->y, 2)) <= 400 ) 
-				DrawCircle(renderer, solpoints[iter]->x, solpoints[iter]->y, 7);
-
-			if ( (pow(mposx - solpoints[iter]->x, 2) + pow(mposy - solpoints[iter]->y, 2)) <= 49 ) 
+			if (iter < totalsolpoints)
 			{
-				SDL_SetRenderDrawColor(renderer, 0xAA, 0xFF, 0xAA, 0xFF);
-				for (int i = 0; i < 7; ++i)
-					DrawCircle(renderer, solpoints[iter]->x, solpoints[iter]->y, i);
-				SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, 0xFF);
+				if ( (pow(mposx - solpoints[iter]->x, 2) + pow(mposy - solpoints[iter]->y, 2)) <= 400 ) 
+					DrawCircle(renderer, solpoints[iter]->x, solpoints[iter]->y, 7);
+
+				if ( (pow(mposx - solpoints[iter]->x, 2) + pow(mposy - solpoints[iter]->y, 2)) <= 49 ) 
+				{
+					SDL_SetRenderDrawColor(renderer, 0xAA, 0xFF, 0xAA, 0xFF);
+					for (int i = 0; i < 7; ++i)
+						DrawCircle(renderer, solpoints[iter]->x, solpoints[iter]->y, i);
+					SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, 0xFF);
+				}
 			}
 
 		}
